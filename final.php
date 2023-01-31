@@ -1,76 +1,85 @@
 <?php
 
-function combinations($arr, $size) {
-    $results = array();
-    $combination = array();
+function combinations(array $arr, int $size): array
+{
+    $results = [];
+    $combination = [];
     generateCombinations($arr, $size, 0, $combination, $results);
+
     return $results;
 }
 
-function generateCombinations($arr, $size, $start, &$combination, &$results) {
-    if (count($combination) == $size) {
-        array_push($results, $combination);
+function generateCombinations(array $array, int $size, int $start, array &$combination, array &$results): void
+{
+    if (count($combination) === $size) {
+        $results[] = $combination;
+
         return;
     }
 
-    for ($i = $start; $i < count($arr); $i++) {
-        array_push($combination, $arr[$i]);
-        generateCombinations($arr, $size, $i + 1, $combination, $results);
+    for ($index = $start; $index < count($array); $index++) {
+        $combination[] = $array[$index];
+        generateCombinations($array, $size, $index + 1, $combination, $results);
         array_pop($combination);
     }
 }
 
-function get_npr($x, $r)
+function get_npr(array $x, int $r): array
 {
     $npr_combinations = combinations($x, $r);
+
     return $npr_combinations;
 }
 
-function get_all_binary_combinations_of_given_length($n)
+function get_all_binary_combinations_of_given_length(int $length_of_binary_combination): array
 {
-    $all_binary_combinations = array();
-    for ($i = 0; $i < pow(2, $n); $i++) {
+    $all_binary_combinations = [];
+    for ($i = 0; $i < 2 ** $length_of_binary_combination; $i++) {
         $binary = decbin($i);
-        $binary = str_pad($binary, $n, "0", STR_PAD_LEFT);
+        $binary = str_pad($binary, $length_of_binary_combination, '0', STR_PAD_LEFT);
         $all_binary_combinations[] = str_split($binary);
     }
+
     return $all_binary_combinations;
 }
 
-function find_items_that_can_be_equally_distributed($data, $max_price, $max_variation)
+function find_items_that_can_be_equally_distributed(array $data, int $max_price, int $max_variation): array
 {
     $max_price_after_equally_distributed = $max_price / $max_variation;
+    // Distribute 10% margin to each different items spread in overall distribution. we can easily make it a higher margin
     $max_price_after_margin = $max_price_after_equally_distributed + $max_price_after_equally_distributed * 0.1;
     $items_that_can_be_equally_distributed = [];
-    for ($i = 0; $i < count($data); $i++) {
-        if ($data[$i]['price'] <= $max_price_after_margin) {
-            array_push($items_that_can_be_equally_distributed, $data[$i]);
+    foreach ($data as $item) {
+        if ($item['price'] <= $max_price_after_margin) {
+            $items_that_can_be_equally_distributed[] = $item;
         }
     }
 
     return [$max_price_after_margin, $items_that_can_be_equally_distributed];
 }
 
-function find_margin_for_each_item_after_multiplied_by_quantity($items_that_can_be_equally_distributed, $max_price_after_margin)
+function find_margin_for_each_item_after_multiplied_by_quantity(array $items_that_can_be_equally_distributed, float $max_price_after_margin): array
 {
     $all_possible_items_with_quantity = [];
     foreach ($items_that_can_be_equally_distributed as $item) {
         for ($i = 1; $i < 100; $i++) {
             if ($item['price'] * $i > $max_price_after_margin) {
-                $new_item_with_quantity_lesser = [];
-                $new_item_with_quantity_lesser['id'] = $item['id'];
-                $new_item_with_quantity_lesser['name'] = $item['name'];
-                $new_item_with_quantity_lesser['price'] = $item['price'];
-                $new_item_with_quantity_lesser['quantity'] = $i - 1;
-                $new_item_with_quantity_lesser['total_price'] = $item['price'] * ($i - 1);
-                $new_item_with_quantity_greater = [];
-                $new_item_with_quantity_greater['id'] = $item['id'];
-                $new_item_with_quantity_greater['name'] = $item['name'];
-                $new_item_with_quantity_greater['price'] = $item['price'];
-                $new_item_with_quantity_greater['quantity'] = $i - 1;
-                $new_item_with_quantity_greater['total_price'] = $item['price'] * ($i);
+                $new_item_with_quantity_lesser = [
+                    'id' => $item['id'],
+                    'name' => $item['name'],
+                    'price' => $item['price'],
+                    'quantity' => $i - 1,
+                    'total_price' => $item['price'] * ($i - 1),
+                ];
+                $new_item_with_quantity_greater = [
+                    'id' => $item['id'],
+                    'name' => $item['name'],
+                    'price' => $item['price'],
+                    'quantity' => $i - 1,
+                    'total_price' => $item['price'] * ($i),
+                ];
 
-                array_push($all_possible_items_with_quantity, [$new_item_with_quantity_lesser, $new_item_with_quantity_greater]);
+                $all_possible_items_with_quantity[] = [$new_item_with_quantity_lesser, $new_item_with_quantity_greater];
                 break;
             }
         }
@@ -79,7 +88,7 @@ function find_margin_for_each_item_after_multiplied_by_quantity($items_that_can_
     return $all_possible_items_with_quantity;
 }
 
-function pick_elements($data, $max_price, $max_variation)
+function pick_elements(array $data, int $max_price, int $max_variation): array
 {
     usort($data, function ($a, $b)
     {
@@ -88,7 +97,7 @@ function pick_elements($data, $max_price, $max_variation)
 
     list($max_price_after_margin, $items_that_can_be_equally_distributed) = find_items_that_can_be_equally_distributed($data, $max_price, $max_variation);
 
-    if ($max_variation == 1) {
+    if ($max_variation === 1) {
         $best_price = 0;
         $picked_item = '';
         foreach ($items_that_can_be_equally_distributed as $item) {
@@ -99,18 +108,19 @@ function pick_elements($data, $max_price, $max_variation)
                 $picked_item = [
                     'id' => $item['id'],
                     'quantity' => $quantity,
+                    'total_amount' => $current_price_sum,
                 ];
             }
         }
-        echo 'best price :'.$best_price."\n";
         $picked_elements = [$picked_item];
     } else {
         $all_possible_items_with_quantity = find_margin_for_each_item_after_multiplied_by_quantity($items_that_can_be_equally_distributed, $max_price_after_margin);
 
         $x = [];
         for ($i = 0; $i < count($all_possible_items_with_quantity); $i++) {
-            array_push($x, $i);
+            $x[] = $i;
         }
+
         $npr_combinations = get_npr($x, $max_variation);
 
         $all_binary_combinations = get_all_binary_combinations_of_given_length($max_variation);
@@ -136,7 +146,6 @@ function pick_elements($data, $max_price, $max_variation)
             }
         }
 
-        echo 'best_price : '.$best_price."\n";
         $picked_elements = [];
 
         for ($i = 0; $i < count($best_combination); $i++) {
@@ -144,15 +153,16 @@ function pick_elements($data, $max_price, $max_variation)
             $item = [
                 'id' => $all_possible_items_with_quantity[$best_npr[$i]][$binary_val]['id'],
                 'quantity' => $all_possible_items_with_quantity[$best_npr[$i]][$binary_val]['quantity'],
+                'total_amount' => $all_possible_items_with_quantity[$best_npr[$i]][$binary_val]['total_price'],
             ];
-            array_push($picked_elements, $item);
+            $picked_elements[] = $item;
         }
     }
 
-    echo "==============================\n";
-    echo 'picked_elements : ';
-
-    return $picked_elements;
+    return [
+        'best_price' => $best_price,
+        'picked_elements' => $picked_elements,
+    ];
 }
 
 $data = [
@@ -173,6 +183,7 @@ $data = [
     ['id'=>15, 'name'=>'100g Heimerle', 'price'=>21230],
 ];
 
-$max_price = 100000;
+$max_price = 5000000;
 $max_variation = 3;
+
 var_dump(pick_elements($data, $max_price, $max_variation));
